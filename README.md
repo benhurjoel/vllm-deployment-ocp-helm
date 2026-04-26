@@ -142,6 +142,8 @@ If that example returns a 403/500, the pod is probably blocked from fetching the
 
 A base64 request template is available at `examples/deepseek-ocr-2-openai-request-base64-template.json`.
 
+For Windows jump host and Postman testing, see `docs/deepseek-ocr-2-windows-postman-test.md`.
+
 Qwen3.6-35B-A3B model-specific vLLM parameters included in the example:
 
 ```yaml
