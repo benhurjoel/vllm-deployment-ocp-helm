@@ -1,0 +1,12 @@
+{
+  "model": "qwen3.6-35b-a3b",
+  "messages": [
+    {
+      "role": "user",
+      "content": "A cluster has 4 H200 GPU nodes. Each node can run 2 vLLM pods. How many model-serving pods can run in total? Show the final answer clearly."
+    }
+  ],
+  "max_tokens": 768,
+  "temperature": 0.0,
+  "top_p": 1.0
+}

@@ -158,3 +158,11 @@ The image payload is not valid base64. Do not paste a filename, path, placeholde
 `404 Not Found`
 
 Make sure you are calling `/v1/embeddings`, not `/v1/chat/completions`.
+
+## Request Files Summary
+
+```text
+examples/qwen3-embedding-4b-openai-request.json
+examples/qwen3-vl-embedding-8b-openai-text-request.json
+examples/qwen3-vl-embedding-8b-openai-image-base64-template.json
+```

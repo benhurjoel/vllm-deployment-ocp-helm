@@ -156,6 +156,8 @@ For Windows jump host and Postman testing, see `docs/deepseek-ocr-2-windows-post
 
 For Qwen embedding Postman tests, see `docs/qwen-embedding-postman-tests.md`.
 
+For Qwen3.6-35B-A3B Postman tests, see `docs/qwen3-6-35b-a3b-postman-tests.md`.
+
 Qwen3.6-35B-A3B model-specific vLLM parameters included in the example:
 
 ```yaml
