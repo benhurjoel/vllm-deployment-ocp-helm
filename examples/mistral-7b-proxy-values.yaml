@@ -1,0 +1,39 @@
+model:
+  repoId: mistralai/Mistral-7B-Instruct-v0.3
+  requiresToken: true
+
+hfTokenSecret:
+  create: false
+  name: hf-token
+  key: token
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+
+# Enable when your proxy performs TLS inspection and OpenShift provides
+# the trusted CA bundle as a ConfigMap in the application namespace.
+trustedCA:
+  enabled: false
+  configMapName: trusted-ca-bundle
+
+modelStorage:
+  size: 250Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  servedModelName: mistral-7b-instruct
+  tensorParallelSize: 1
+  maxModelLen: "8192"
+
+resources:
+  requests:
+    cpu: "8"
+    memory: 48Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "16"
+    memory: 64Gi
+    nvidia.com/gpu: "1"

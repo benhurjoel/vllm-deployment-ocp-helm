@@ -1,0 +1,329 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vllm-hf.fullname" . }}
+  labels:
+    {{- include "vllm-hf.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vllm-hf.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vllm-hf.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "vllm-hf.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.downloader.enabled }}
+      initContainers:
+        - name: download-model
+          image: "{{ .Values.downloader.image.repository }}:{{ .Values.downloader.image.tag }}"
+          imagePullPolicy: {{ .Values.downloader.image.pullPolicy }}
+          env:
+            - name: HOME
+              value: {{ .Values.downloader.home | quote }}
+            - name: XDG_CACHE_HOME
+              value: {{ .Values.downloader.xdgCacheHome | quote }}
+            - name: HF_DOWNLOADER_VENV
+              value: {{ .Values.downloader.venvPath | quote }}
+            - name: HF_HOME
+              value: {{ .Values.modelStorage.mountPath | quote }}
+            - name: HF_HUB_CACHE
+              value: {{ .Values.downloader.hfHubCache | quote }}
+            - name: HUGGINGFACE_HUB_CACHE
+              value: {{ .Values.downloader.hfHubCache | quote }}
+            - name: TRANSFORMERS_CACHE
+              value: {{ .Values.downloader.transformersCache | quote }}
+            - name: HF_HUB_ENABLE_HF_TRANSFER
+              value: {{ ternary "1" "0" .Values.downloader.enableHfTransfer | quote }}
+            - name: HF_HUB_DISABLE_XET
+              value: {{ ternary "1" "0" .Values.downloader.disableXet | quote }}
+            - name: PIP_CACHE_DIR
+              value: {{ .Values.downloader.pipCacheDir | quote }}
+            {{- if or .Values.model.requiresToken .Values.hfTokenSecret.create .Values.hfTokenSecret.name }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vllm-hf.hfTokenSecretName" . }}
+                  key: {{ .Values.hfTokenSecret.key }}
+            {{- end }}
+            {{- include "vllm-hf.proxyEnv" . | nindent 12 }}
+            {{- include "vllm-hf.trustedCAEnv" . | nindent 12 }}
+            {{- with .Values.downloader.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.downloader.extraEnvs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          command:
+            - /bin/bash
+            - -ec
+          args:
+            - |
+              mkdir -p "${HOME}" "${PIP_CACHE_DIR}" "${XDG_CACHE_HOME}"
+              if command -v python3 >/dev/null 2>&1; then
+                PYTHON_BIN="python3"
+              elif command -v python >/dev/null 2>&1; then
+                PYTHON_BIN="python"
+              else
+                echo "Neither python3 nor python was found in the downloader image." >&2
+                exit 1
+              fi
+              {{- if .Values.downloader.installDependencies }}
+              "${PYTHON_BIN}" -m venv "${HF_DOWNLOADER_VENV}"
+              "${HF_DOWNLOADER_VENV}/bin/python" -m pip install --upgrade pip
+              "${HF_DOWNLOADER_VENV}/bin/python" -m pip install --upgrade "huggingface_hub[hf_transfer]=={{ .Values.downloader.huggingFaceHubVersion }}"
+              PYTHON_BIN="${HF_DOWNLOADER_VENV}/bin/python"
+              {{- end }}
+              "${PYTHON_BIN}" - <<'PY'
+              import importlib.util
+              import sys
+
+              if importlib.util.find_spec("huggingface_hub") is None:
+                  sys.stderr.write(
+                      "huggingface_hub is not installed in the downloader image. "
+                      "Use a downloader image that includes it, or set "
+                      "downloader.installDependencies=true when PyPI access is available.\n"
+                  )
+                  sys.exit(1)
+              PY
+              mkdir -p {{ include "vllm-hf.modelPath" . | quote }}
+              if [ -f {{ printf "%s/.complete" (include "vllm-hf.modelPath" .) | quote }} ]; then
+                echo "Model already downloaded at {{ include "vllm-hf.modelPath" . }}"
+                exit 0
+              fi
+              "${PYTHON_BIN}" - <<'PY'
+              import os
+              from huggingface_hub import snapshot_download
+
+              snapshot_download(
+                  repo_id={{ .Values.model.repoId | quote }},
+                  revision={{ default "" .Values.model.revision | quote }} or None,
+                  local_dir={{ include "vllm-hf.modelPath" . | quote }},
+                  local_dir_use_symlinks=False,
+                  allow_patterns={{ toJson .Values.model.allowPatterns }} or None,
+                  ignore_patterns={{ toJson .Values.model.ignorePatterns }} or None,
+                  token=os.environ.get("HF_TOKEN"),
+              )
+              PY
+              date -u +"%Y-%m-%dT%H:%M:%SZ" > {{ printf "%s/.complete" (include "vllm-hf.modelPath" .) | quote }}
+          volumeMounts:
+            - name: model-storage
+              mountPath: {{ .Values.modelStorage.mountPath | quote }}
+            {{- if .Values.cacheVolume.enabled }}
+            - name: writable-cache
+              mountPath: {{ .Values.cacheVolume.mountPath | quote }}
+            - name: writable-cache
+              mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
+            {{- end }}
+            {{- if .Values.trustedCA.enabled }}
+            - name: trusted-ca
+              mountPath: {{ .Values.trustedCA.mountPath | quote }}
+              subPath: {{ .Values.trustedCA.key | quote }}
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.downloader.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.downloader.securityContext | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: vllm
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: HOME
+              value: {{ .Values.vllm.home | quote }}
+            - name: XDG_CACHE_HOME
+              value: {{ .Values.vllm.xdgCacheHome | quote }}
+            - name: HF_HOME
+              value: {{ .Values.modelStorage.mountPath | quote }}
+            - name: HF_HUB_CACHE
+              value: {{ .Values.vllm.hfHubCache | quote }}
+            - name: HUGGINGFACE_HUB_CACHE
+              value: {{ .Values.vllm.hfHubCache | quote }}
+            - name: TRANSFORMERS_CACHE
+              value: {{ .Values.vllm.transformersCache | quote }}
+            - name: TORCH_HOME
+              value: {{ .Values.vllm.torchHome | quote }}
+            - name: SENTENCE_TRANSFORMERS_HOME
+              value: {{ .Values.vllm.sentenceTransformersHome | quote }}
+            - name: MPLCONFIGDIR
+              value: {{ .Values.vllm.matplotlibConfigDir | quote }}
+            {{- if .Values.apiKeySecret.enabled }}
+            - name: VLLM_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vllm-hf.apiKeySecretName" . }}
+                  key: {{ .Values.apiKeySecret.key }}
+            {{- end }}
+            {{- if or .Values.model.requiresToken .Values.hfTokenSecret.create .Values.hfTokenSecret.name }}
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vllm-hf.hfTokenSecretName" . }}
+                  key: {{ .Values.hfTokenSecret.key }}
+            {{- end }}
+            {{- include "vllm-hf.proxyEnv" . | nindent 12 }}
+            {{- include "vllm-hf.trustedCAEnv" . | nindent 12 }}
+            {{- with .Values.vllm.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.vllm.extraEnvs }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          args:
+            - --host
+            - {{ .Values.vllm.host | quote }}
+            - --port
+            - {{ .Values.vllm.port | quote }}
+            - --model
+            - {{ include "vllm-hf.modelPath" . | quote }}
+            - --served-model-name
+            - {{ default .Values.model.repoId .Values.vllm.servedModelName | quote }}
+            - --tensor-parallel-size
+            - {{ .Values.vllm.tensorParallelSize | quote }}
+            - --gpu-memory-utilization
+            - {{ .Values.vllm.gpuMemoryUtilization | quote }}
+            {{- if .Values.vllm.runner }}
+            - --runner
+            - {{ .Values.vllm.runner | quote }}
+            {{- end }}
+            - --dtype
+            - {{ .Values.vllm.dtype | quote }}
+            {{- if .Values.apiKeySecret.enabled }}
+            - --api-key
+            - $(VLLM_API_KEY)
+            {{- end }}
+            {{- if .Values.vllm.task }}
+            - --task
+            - {{ .Values.vllm.task | quote }}
+            {{- end }}
+            {{- if .Values.vllm.maxModelLen }}
+            - --max-model-len
+            - {{ .Values.vllm.maxModelLen | quote }}
+            {{- end }}
+            {{- if .Values.vllm.quantization }}
+            - --quantization
+            - {{ .Values.vllm.quantization | quote }}
+            {{- end }}
+            {{- if .Values.model.trustRemoteCode }}
+            - --trust-remote-code
+            {{- end }}
+            {{- range .Values.vllm.extraArgs }}
+            - {{ . | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.vllm.port }}
+              protocol: TCP
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe:
+            {{- if eq .Values.startupProbe.type "tcp" }}
+            tcpSocket:
+              port: {{ .Values.startupProbe.port }}
+            {{- else }}
+            httpGet:
+              path: {{ .Values.startupProbe.path | quote }}
+              port: {{ .Values.startupProbe.port }}
+            {{- end }}
+            failureThreshold: {{ .Values.startupProbe.failureThreshold }}
+            periodSeconds: {{ .Values.startupProbe.periodSeconds }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            {{- if eq .Values.readinessProbe.type "tcp" }}
+            tcpSocket:
+              port: {{ .Values.readinessProbe.port }}
+            {{- else }}
+            httpGet:
+              path: {{ .Values.readinessProbe.path | quote }}
+              port: {{ .Values.readinessProbe.port }}
+            {{- end }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe:
+            {{- if eq .Values.livenessProbe.type "tcp" }}
+            tcpSocket:
+              port: {{ .Values.livenessProbe.port }}
+            {{- else }}
+            httpGet:
+              path: {{ .Values.livenessProbe.path | quote }}
+              port: {{ .Values.livenessProbe.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
+            failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
+          {{- end }}
+          volumeMounts:
+            - name: model-storage
+              mountPath: {{ .Values.modelStorage.mountPath | quote }}
+            {{- if .Values.cacheVolume.enabled }}
+            - name: writable-cache
+              mountPath: {{ .Values.cacheVolume.mountPath | quote }}
+            - name: writable-cache
+              mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
+            {{- end }}
+            {{- if .Values.trustedCA.enabled }}
+            - name: trusted-ca
+              mountPath: {{ .Values.trustedCA.mountPath | quote }}
+              subPath: {{ .Values.trustedCA.key | quote }}
+              readOnly: true
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: {{ include "vllm-hf.claimName" . }}
+        {{- if .Values.cacheVolume.enabled }}
+        - name: writable-cache
+          emptyDir:
+            {{- toYaml .Values.cacheVolume.emptyDir | nindent 12 }}
+        {{- end }}
+        {{- if .Values.trustedCA.enabled }}
+        - name: trusted-ca
+          configMap:
+            name: {{ required "trustedCA.configMapName is required when trustedCA.enabled=true" .Values.trustedCA.configMapName }}
+            items:
+              - key: {{ .Values.trustedCA.key }}
+                path: {{ .Values.trustedCA.key }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.nodeAffinity.enabled }}
+      affinity:
+        nodeAffinity:
+          {{ .Values.nodeAffinity.type }}:
+            nodeSelectorTerms:
+              {{- toYaml .Values.nodeAffinity.nodeSelectorTerms | nindent 14 }}
+      {{- else }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,17 @@
+model:
+  repoId: meta-llama/Meta-Llama-3.1-8B-Instruct
+  requiresToken: true
+
+hfTokenSecret:
+  name: hf-token
+  key: token
+
+modelStorage:
+  create: false
+  existingClaim: llama-model-cache
+  mountPath: /models
+
+vllm:
+  servedModelName: llama-3.1-8b-instruct
+  tensorParallelSize: 1
+  maxModelLen: "8192"

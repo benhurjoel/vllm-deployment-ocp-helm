@@ -1,0 +1,45 @@
+nodeAffinity:
+  enabled: true
+  type: requiredDuringSchedulingIgnoredDuringExecution
+  nodeSelectorTerms:
+    - matchExpressions:
+        - key: nvidia.com/gpu.present
+          operator: In
+          values:
+            - "true"
+        - key: nvidia.com/gpu.product
+          operator: In
+          values:
+            - NVIDIA-H200
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+vllm:
+  extraEnvs:
+    - name: VLLM_LOGGING_LEVEL
+      value: INFO
+
+startupProbe:
+  port: 8000
+
+readinessProbe:
+  port: 8000
+
+livenessProbe:
+  port: 8000
+
+openshift:
+  scc:
+    anyuid:
+      enabled: true
+
+# If the pod fails before the init command runs with a runAsNonRoot/image-user
+# validation error, uncomment these fixed non-root UIDs.
+# downloader:
+#   securityContext:
+#     runAsUser: 1001
+# securityContext:
+#   runAsUser: 1001

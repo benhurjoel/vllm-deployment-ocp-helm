@@ -1,0 +1,21 @@
+{{- if and .Values.modelStorage.create (not .Values.modelStorage.existingClaim) -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vllm-hf.claimName" . }}
+  labels:
+    {{- include "vllm-hf.labels" . | nindent 4 }}
+  {{- with .Values.modelStorage.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- toYaml .Values.modelStorage.accessModes | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ .Values.modelStorage.size | quote }}
+  {{- if .Values.modelStorage.storageClassName }}
+  storageClassName: {{ .Values.modelStorage.storageClassName | quote }}
+  {{- end }}
+{{- end }}

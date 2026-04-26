@@ -1,0 +1,16 @@
+{{- if .Values.openshift.scc.anyuid.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "vllm-hf.fullname" . }}-anyuid
+  labels:
+    {{- include "vllm-hf.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:openshift:scc:anyuid
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "vllm-hf.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}

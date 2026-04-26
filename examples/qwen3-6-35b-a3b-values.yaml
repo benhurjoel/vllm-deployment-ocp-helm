@@ -1,0 +1,67 @@
+model:
+  repoId: Qwen/Qwen3.6-35B-A3B
+  requiresToken: false
+  trustRemoteCode: false
+
+image:
+  # Qwen3.6 requires a recent vLLM. The Hugging Face model card recommends
+  # vLLM >= 0.19.0; the vLLM recipe lists 0.17.0+ as minimum.
+  repository: vllm/vllm-openai
+  tag: "v0.19.0"
+
+downloader:
+  image:
+    repository: vllm/vllm-openai
+    tag: "v0.19.0"
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+  nodeUseEnvProxy: true
+
+route:
+  enabled: true
+  host: qwen3-6-35b-a3b.apps.example.openshift.com
+
+modelStorage:
+  size: 250Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  servedModelName: qwen3.6-35b-a3b
+  task: ""
+  tensorParallelSize: 1
+  maxModelLen: "262144"
+  dtype: bfloat16
+  gpuMemoryUtilization: 0.90
+  extraArgs:
+    # Required by the Qwen3.6 vLLM serving recipe for reasoning output.
+    - --reasoning-parser
+    - qwen3
+    # Uncomment for tool calling support if your gateway/client needs it.
+    # - --enable-auto-tool-choice
+    # - --tool-call-parser
+    # - qwen3_coder
+    # Uncomment for text-only serving to skip the vision encoder and save memory.
+    # - --language-model-only
+  extraEnvs:
+    - name: VLLM_LOGGING_LEVEL
+      value: INFO
+
+resources:
+  requests:
+    cpu: "16"
+    memory: 128Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "32"
+    memory: 192Gi
+    nvidia.com/gpu: "1"
+
+# Qwen3.6-35B-A3B has a 262,144-token native context. If the pod OOMs during
+# initial validation, reduce maxModelLen temporarily, for example to "32768".
+# For >262K context, the model card documents YaRN hf-overrides and
+# VLLM_ALLOW_LONG_MAX_MODEL_LEN=1, which can be supplied through extraArgs and
+# extraEnvs after the base deployment is stable.

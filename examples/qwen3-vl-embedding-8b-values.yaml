@@ -1,0 +1,74 @@
+model:
+  repoId: Qwen/Qwen3-VL-Embedding-8B
+  requiresToken: false
+  trustRemoteCode: true
+
+image:
+  # The model card documents vLLM usage with the pooling runner.
+  # Use a recent vLLM image for Qwen3-VL support.
+  repository: vllm/vllm-openai
+  tag: "v0.19.0"
+
+downloader:
+  image:
+    repository: vllm/vllm-openai
+    tag: "v0.19.0"
+  xdgCacheHome: /tmp/.cache
+  hfHubCache: /tmp/.cache/huggingface/hub
+  transformersCache: /tmp/.cache/huggingface/transformers
+
+cacheVolume:
+  enabled: true
+  mountPath: /tmp/.cache
+  rootCacheMountPath: /.cache
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+  nodeUseEnvProxy: true
+
+route:
+  enabled: true
+  host: qwen3-vl-embedding-8b.apps.example.openshift.com
+
+modelStorage:
+  size: 120Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  servedModelName: qwen3-vl-embedding-8b
+  task: ""
+  runner: pooling
+  tensorParallelSize: 1
+  maxModelLen: "32768"
+  dtype: bfloat16
+  gpuMemoryUtilization: 0.85
+  home: /tmp/home
+  xdgCacheHome: /tmp/.cache
+  hfHubCache: /tmp/.cache/huggingface/hub
+  transformersCache: /tmp/.cache/huggingface/transformers
+  torchHome: /tmp/.cache/torch
+  sentenceTransformersHome: /tmp/.cache/sentence_transformers
+  matplotlibConfigDir: /tmp/.cache/matplotlib
+  extraEnvs:
+    - name: VLLM_LOGGING_LEVEL
+      value: INFO
+
+resources:
+  requests:
+    cpu: "8"
+    memory: 48Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "16"
+    memory: 96Gi
+    nvidia.com/gpu: "1"
+
+# Qwen3-VL-Embedding-8B is a multimodal embedding model:
+# - input modalities: text, image, video, and mixed multimodal inputs
+# - context length: 32K
+# - embedding dimension: up to 4096
+# The vLLM model card example uses runner="pooling"; this file renders
+# --runner pooling for the OpenAI-compatible vLLM server.

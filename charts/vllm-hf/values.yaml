@@ -1,0 +1,217 @@
+replicaCount: 1
+
+image:
+  repository: vllm/vllm-openai
+  tag: "v0.8.5"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+model:
+  # Hugging Face repo id, for example: mistralai/Mistral-7B-Instruct-v0.3
+  repoId: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+  # Optional repo revision, branch, tag, or commit SHA.
+  revision: ""
+  # Local folder name inside the PVC. Defaults to a sanitized repoId when empty.
+  localDirName: ""
+  # Optional allow/ignore patterns passed to huggingface-cli download.
+  allowPatterns: []
+  ignorePatterns: []
+  # Set to true for gated/private models. Provide token via hfTokenSecret.
+  requiresToken: false
+  trustRemoteCode: false
+
+hfTokenSecret:
+  # If create is true, set token during install with:
+  # --set hfTokenSecret.token=hf_...
+  create: false
+  name: ""
+  key: token
+  token: ""
+
+apiKeySecret:
+  enabled: false
+  # If create is true, set the API key during install with:
+  # --set apiKeySecret.value=<api_key>
+  create: false
+  name: ""
+  key: api-key
+  value: ""
+
+proxy:
+  enabled: false
+  httpProxy: ""
+  httpsProxy: ""
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1"
+  nodeUseEnvProxy: true
+
+trustedCA:
+  enabled: false
+  # ConfigMap containing a PEM CA bundle. On OpenShift this is often injected
+  # by the cluster Network operator from spec.trustedCA.
+  configMapName: ""
+  key: ca-bundle.crt
+  mountPath: /etc/pki/ca-trust/extracted/pem/proxy-ca-bundle.crt
+
+cacheVolume:
+  enabled: true
+  mountPath: /tmp/.cache
+  rootCacheMountPath: /.cache
+  emptyDir: {}
+
+modelStorage:
+  mountPath: /models
+  existingClaim: ""
+  create: true
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 100Gi
+  annotations: {}
+
+downloader:
+  enabled: true
+  image:
+    repository: vllm/vllm-openai
+    tag: "v0.8.5"
+    pullPolicy: IfNotPresent
+  home: /tmp/home
+  venvPath: /tmp/hf-venv
+  pipCacheDir: /tmp/pip-cache
+  xdgCacheHome: /tmp/.cache
+  hfHubCache: /tmp/.cache/huggingface/hub
+  transformersCache: /tmp/.cache/huggingface/transformers
+  installDependencies: false
+  huggingFaceHubVersion: "0.30.2"
+  enableHfTransfer: false
+  disableXet: true
+  extraEnv: []
+  extraEnvs: []
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+  securityContext:
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+vllm:
+  servedModelName: ""
+  # Use "embed" for embedding models, "generate" for generation-only models,
+  # or leave empty for vLLM auto detection.
+  task: ""
+  host: 0.0.0.0
+  port: 8000
+  # Use "pooling" for embedding/reranker models when required by vLLM.
+  runner: ""
+  tensorParallelSize: 1
+  gpuMemoryUtilization: 0.90
+  maxModelLen: ""
+  dtype: auto
+  quantization: ""
+  home: /tmp/home
+  xdgCacheHome: /tmp/.cache
+  hfHubCache: /tmp/.cache/huggingface/hub
+  transformersCache: /tmp/.cache/huggingface/transformers
+  torchHome: /tmp/.cache/torch
+  sentenceTransformersHome: /tmp/.cache/sentence_transformers
+  matplotlibConfigDir: /tmp/.cache/matplotlib
+  extraArgs: []
+  extraEnv: []
+  extraEnvs: []
+
+service:
+  type: ClusterIP
+  port: 8000
+  annotations: {}
+
+route:
+  enabled: true
+  # Optional external hostname for the OpenShift Route, for example:
+  # qwen3-embedding.apps.example.openshift.com
+  host: ""
+  annotations: {}
+  tls:
+    enabled: true
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+resources:
+  requests:
+    cpu: "4"
+    memory: 16Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "8"
+    memory: 32Gi
+    nvidia.com/gpu: "1"
+
+podAnnotations: {}
+podLabels: {}
+
+nodeSelector: {}
+nodeAffinity:
+  enabled: false
+  type: requiredDuringSchedulingIgnoredDuringExecution
+  # Define Kubernetes nodeSelectorTerms here. Useful for pinning workloads to
+  # GPU nodes, specific GPU product labels, or custom OpenShift node labels.
+  nodeSelectorTerms: []
+tolerations: []
+affinity: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+startupProbe:
+  enabled: true
+  # Use tcp when vLLM is protected by --api-key. HTTP probes cannot inject
+  # Authorization headers from Secrets.
+  type: tcp
+  path: /health
+  port: 8000
+  failureThreshold: 120
+  periodSeconds: 10
+
+readinessProbe:
+  enabled: true
+  type: tcp
+  path: /health
+  port: 8000
+  periodSeconds: 10
+  failureThreshold: 6
+
+livenessProbe:
+  enabled: true
+  type: tcp
+  path: /health
+  port: 8000
+  initialDelaySeconds: 60
+  periodSeconds: 30
+  failureThreshold: 3
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+openshift:
+  scc:
+    anyuid:
+      enabled: false

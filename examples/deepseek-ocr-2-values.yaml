@@ -1,0 +1,68 @@
+model:
+  repoId: deepseek-ai/DeepSeek-OCR-2
+  requiresToken: false
+  # DeepSeek-OCR-2 uses custom Transformers code.
+  trustRemoteCode: true
+
+image:
+  # DeepSeek-OCR-2 is supported by recent vLLM releases. Keep downloader
+  # aligned with runtime because the init container reuses this image.
+  repository: vllm/vllm-openai
+  tag: "v0.19.0"
+
+downloader:
+  image:
+    repository: vllm/vllm-openai
+    tag: "v0.19.0"
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+  nodeUseEnvProxy: true
+
+route:
+  enabled: true
+  host: deepseek-ocr-2.apps.example.openshift.com
+
+modelStorage:
+  size: 100Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  # Match the model name used in the vLLM/OpenAI recipe request examples.
+  servedModelName: deepseek-ai/DeepSeek-OCR-2
+  task: ""
+  tensorParallelSize: 1
+  maxModelLen: "8192"
+  dtype: bfloat16
+  gpuMemoryUtilization: 0.80
+  extraArgs:
+    # Recommended by the vLLM DeepSeek-OCR-2 online serving recipe.
+    - --logits_processors
+    - vllm.model_executor.models.deepseek_ocr:NGramPerReqLogitsProcessor
+    - --no-enable-prefix-caching
+    - --mm-processor-cache-gb
+    - "0"
+  extraEnvs:
+    - name: VLLM_LOGGING_LEVEL
+      value: INFO
+
+resources:
+  requests:
+    cpu: "8"
+    memory: 48Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "16"
+    memory: 96Gi
+    nvidia.com/gpu: "1"
+
+# Request requirements for OpenAI-compatible clients:
+# - model: deepseek-ai/DeepSeek-OCR-2
+# - Use a plain OCR prompt such as "Free OCR." or
+#   "<image>\n<|grounding|>Convert the document to markdown."
+# - Include extra_body.skip_special_tokens=false.
+# - Include extra_body.vllm_xargs:
+#   ngram_size=30, window_size=90, whitelist_token_ids=[128821,128822].

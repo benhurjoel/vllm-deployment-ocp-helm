@@ -1,0 +1,5 @@
+apiKeySecret:
+  enabled: true
+  create: false
+  name: vllm-api-key
+  key: api-key

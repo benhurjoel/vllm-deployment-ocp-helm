@@ -1,0 +1,21 @@
+{{- if and .Values.model.requiresToken (not .Values.hfTokenSecret.create) (not .Values.hfTokenSecret.name) -}}
+{{- fail "model.requiresToken=true requires hfTokenSecret.name or hfTokenSecret.create=true" -}}
+{{- end -}}
+{{- if and .Values.hfTokenSecret.create (not .Values.hfTokenSecret.token) -}}
+{{- fail "hfTokenSecret.token is required when hfTokenSecret.create=true" -}}
+{{- end -}}
+{{- if and (not .Values.modelStorage.create) (not .Values.modelStorage.existingClaim) -}}
+{{- fail "modelStorage.existingClaim is required when modelStorage.create=false" -}}
+{{- end -}}
+{{- if and .Values.trustedCA.enabled (not .Values.trustedCA.configMapName) -}}
+{{- fail "trustedCA.configMapName is required when trustedCA.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.nodeAffinity.enabled (not .Values.nodeAffinity.nodeSelectorTerms) -}}
+{{- fail "nodeAffinity.nodeSelectorTerms is required when nodeAffinity.enabled=true" -}}
+{{- end -}}
+{{- if and .Values.apiKeySecret.enabled (not .Values.apiKeySecret.create) (not .Values.apiKeySecret.name) -}}
+{{- fail "apiKeySecret.enabled=true requires apiKeySecret.name or apiKeySecret.create=true" -}}
+{{- end -}}
+{{- if and .Values.apiKeySecret.enabled .Values.apiKeySecret.create (not .Values.apiKeySecret.value) -}}
+{{- fail "apiKeySecret.value is required when apiKeySecret.enabled=true and apiKeySecret.create=true" -}}
+{{- end -}}

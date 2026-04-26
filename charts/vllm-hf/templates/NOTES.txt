@@ -1,0 +1,20 @@
+vLLM is being deployed with model:
+  {{ .Values.model.repoId }}
+
+The model will be downloaded to:
+  {{ include "vllm-hf.modelPath" . }}
+
+Service:
+  {{ include "vllm-hf.fullname" . }}:{{ .Values.service.port }}
+
+{{- if .Values.route.enabled }}
+OpenShift Route:
+  oc get route {{ include "vllm-hf.fullname" . }}
+{{- end }}
+
+For gated Hugging Face models, create a token secret or install with:
+  helm upgrade --install {{ .Release.Name }} {{ .Chart.Name }} \
+    --set model.repoId=<org/model> \
+    --set model.requiresToken=true \
+    --set hfTokenSecret.create=true \
+    --set hfTokenSecret.token=<hf_token>

@@ -1,0 +1,37 @@
+model:
+  repoId: Qwen/Qwen3-Embedding-4B
+  requiresToken: false
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+  nodeUseEnvProxy: true
+
+route:
+  enabled: true
+  host: qwen3-embedding.apps.example.openshift.com
+
+modelStorage:
+  size: 120Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  servedModelName: qwen3-embedding-4b
+  # Leave empty for compatibility with vLLM images whose OpenAI server does
+  # not support --task. Newer vLLM images can set this to "embed" if needed.
+  task: ""
+  tensorParallelSize: 1
+  maxModelLen: "8192"
+  dtype: float16
+
+resources:
+  requests:
+    cpu: "4"
+    memory: 24Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "8"
+    memory: 48Gi
+    nvidia.com/gpu: "1"
