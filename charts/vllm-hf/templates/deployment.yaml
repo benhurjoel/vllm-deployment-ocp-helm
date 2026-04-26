@@ -130,6 +130,10 @@ spec:
             - name: writable-cache
               mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
             {{- end }}
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: {{ .Values.shmVolume.mountPath | quote }}
+            {{- end }}
             {{- if .Values.trustedCA.enabled }}
             - name: trusted-ca
               mountPath: {{ .Values.trustedCA.mountPath | quote }}
@@ -280,6 +284,10 @@ spec:
             - name: writable-cache
               mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
             {{- end }}
+            {{- if .Values.shmVolume.enabled }}
+            - name: dshm
+              mountPath: {{ .Values.shmVolume.mountPath | quote }}
+            {{- end }}
             {{- if .Values.trustedCA.enabled }}
             - name: trusted-ca
               mountPath: {{ .Values.trustedCA.mountPath | quote }}
@@ -298,6 +306,12 @@ spec:
         - name: writable-cache
           emptyDir:
             {{- toYaml .Values.cacheVolume.emptyDir | nindent 12 }}
+        {{- end }}
+        {{- if .Values.shmVolume.enabled }}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: {{ .Values.shmVolume.sizeLimit | quote }}
         {{- end }}
         {{- if .Values.trustedCA.enabled }}
         - name: trusted-ca

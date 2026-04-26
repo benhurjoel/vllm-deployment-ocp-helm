@@ -61,6 +61,11 @@ cacheVolume:
   rootCacheMountPath: /.cache
   emptyDir: {}
 
+shmVolume:
+  enabled: true
+  mountPath: /dev/shm
+  sizeLimit: 2Gi
+
 modelStorage:
   mountPath: /models
   existingClaim: ""
