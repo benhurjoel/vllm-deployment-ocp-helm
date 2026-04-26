@@ -4,8 +4,6 @@ model:
   trustRemoteCode: true
 
 image:
-  # The model card documents vLLM usage with the pooling runner.
-  # Use a recent vLLM image for Qwen3-VL support.
   repository: "vllm/vllm-openai"
   tag: "v0.19.0"
 
@@ -16,6 +14,12 @@ downloader:
   xdgCacheHome: "/tmp/.cache"
   hfHubCache: "/tmp/.cache/huggingface/hub"
   transformersCache: "/tmp/.cache/huggingface/transformers"
+
+apiKeySecret:
+  enabled: true
+  create: false
+  name: "vllm-api-key"
+  key: "api-key"
 
 cacheVolume:
   enabled: true
@@ -43,8 +47,6 @@ vllm:
   runner: "pooling"
   convert: "embed"
   tensorParallelSize: 1
-  # Start conservative for engine initialization. Raise to 32768 after the
-  # pod is stable.
   maxModelLen: "16384"
   dtype: "bfloat16"
   gpuMemoryUtilization: 0.80
@@ -56,9 +58,9 @@ vllm:
   sentenceTransformersHome: "/tmp/.cache/sentence_transformers"
   matplotlibConfigDir: "/tmp/.cache/matplotlib"
   extraEnvs:
-    - name: VLLM_LOGGING_LEVEL
+    - name: "VLLM_LOGGING_LEVEL"
       value: "INFO"
-    - name: VLLM_WORKER_MULTIPROC_METHOD
+    - name: "VLLM_WORKER_MULTIPROC_METHOD"
       value: "spawn"
   extraArgs:
     - "--distributed-executor-backend"
@@ -74,9 +76,35 @@ resources:
     memory: 96Gi
     nvidia.com/gpu: "1"
 
-# Qwen3-VL-Embedding-8B is a multimodal embedding model:
-# - input modalities: text, image, video, and mixed multimodal inputs
-# - context length: 32K
-# - embedding dimension: up to 4096
-# The vLLM model card example uses runner="pooling"; this file renders
-# --runner pooling and --convert embed for the OpenAI-compatible vLLM server.
+nodeAffinity:
+  enabled: true
+  type: "requiredDuringSchedulingIgnoredDuringExecution"
+  nodeSelectorTerms:
+    - matchExpressions:
+        - key: "nvidia.com/gpu.present"
+          operator: "In"
+          values:
+            - "true"
+        - key: "nvidia.com/gpu.product"
+          operator: "In"
+          values:
+            - "NVIDIA-H200"
+
+tolerations:
+  - key: "nvidia.com/gpu"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+startupProbe:
+  port: 8000
+
+readinessProbe:
+  port: 8000
+
+livenessProbe:
+  port: 8000
+
+openshift:
+  scc:
+    anyuid:
+      enabled: true

@@ -1,0 +1,11 @@
+{
+  "model": "qwen3-vl-embedding-8b",
+  "input": [
+    {
+      "type": "image_url",
+      "image_url": {
+        "url": "data:image/png;base64,PASTE_BASE64_HERE"
+      }
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "model": "qwen3-vl-embedding-8b",
+  "input": [
+    "A sample document page with invoice number 12345 and total amount 42.50.",
+    "A product photo showing a red backpack on a white background."
+  ]
+}

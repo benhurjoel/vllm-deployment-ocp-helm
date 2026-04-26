@@ -96,6 +96,11 @@ helm upgrade --install qwen3-vl-embedding ./charts/vllm-hf \
   -n llm-serving \
   -f examples/qwen3-vl-embedding-8b-values.yaml \
   -f examples/h200-gpu-node-affinity-values.yaml
+
+# Single merged values file for OCP UI / H200 / Portkey.
+helm upgrade --install qwen3-vl-embedding ./charts/vllm-hf \
+  -n llm-serving \
+  -f examples/qwen3-vl-embedding-8b-h200-portkey-values.yaml
 ```
 
 DeepSeek-OCR-2 uses custom Transformers code. If the vLLM image reports an unsupported model architecture, use this chart to cache the model on PVC and serve it with a custom Transformers-based runtime.
@@ -148,6 +153,8 @@ If that example returns a 403/500, the pod is probably blocked from fetching the
 A base64 request template is available at `examples/deepseek-ocr-2-openai-request-base64-template.json`.
 
 For Windows jump host and Postman testing, see `docs/deepseek-ocr-2-windows-postman-test.md`.
+
+For Qwen embedding Postman tests, see `docs/qwen-embedding-postman-tests.md`.
 
 Qwen3.6-35B-A3B model-specific vLLM parameters included in the example:
 

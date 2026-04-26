@@ -1,0 +1,7 @@
+{
+  "model": "qwen3-embedding-4b",
+  "input": [
+    "OpenShift runs containerized workloads on Kubernetes.",
+    "vLLM serves OpenAI-compatible model APIs."
+  ]
+}
