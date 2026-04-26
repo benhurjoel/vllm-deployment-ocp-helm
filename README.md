@@ -107,6 +107,12 @@ vllm:
     - --no-enable-prefix-caching
     - --mm-processor-cache-gb
     - "0"
+    - --limit-mm-per-prompt
+    - image=1
+    - --max-num-seqs
+    - "1"
+    - --max-num-batched-tokens
+    - "8192"
 ```
 
 DeepSeek-OCR-2 request requirements:

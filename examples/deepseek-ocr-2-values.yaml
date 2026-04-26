@@ -45,6 +45,13 @@ vllm:
     - --no-enable-prefix-caching
     - --mm-processor-cache-gb
     - "0"
+    # Conservative serving limits for OCR smoke tests on one GPU.
+    - --limit-mm-per-prompt
+    - image=1
+    - --max-num-seqs
+    - "1"
+    - --max-num-batched-tokens
+    - "8192"
   extraEnvs:
     - name: VLLM_LOGGING_LEVEL
       value: INFO
