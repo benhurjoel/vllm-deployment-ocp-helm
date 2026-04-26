@@ -304,8 +304,12 @@ spec:
             claimName: {{ include "vllm-hf.claimName" . }}
         {{- if .Values.cacheVolume.enabled }}
         - name: writable-cache
+          {{- if .Values.cacheVolume.emptyDir }}
           emptyDir:
             {{- toYaml .Values.cacheVolume.emptyDir | nindent 12 }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- end }}
         {{- if .Values.shmVolume.enabled }}
         - name: dshm
