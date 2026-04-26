@@ -70,7 +70,9 @@ spec:
                   name: {{ include "vllm-hf.hfTokenSecretName" . }}
                   key: {{ .Values.hfTokenSecret.key }}
             {{- end }}
+            {{- if ne .Values.proxy.applyToDownloader false }}
             {{- include "vllm-hf.proxyEnv" . | nindent 12 }}
+            {{- end }}
             {{- include "vllm-hf.trustedCAEnv" . | nindent 12 }}
             {{- with .Values.downloader.extraEnv }}
             {{- toYaml . | nindent 12 }}
@@ -191,7 +193,9 @@ spec:
                   name: {{ include "vllm-hf.hfTokenSecretName" . }}
                   key: {{ .Values.hfTokenSecret.key }}
             {{- end }}
+            {{- if ne .Values.proxy.applyToRuntime false }}
             {{- include "vllm-hf.proxyEnv" . | nindent 12 }}
+            {{- end }}
             {{- include "vllm-hf.trustedCAEnv" . | nindent 12 }}
             {{- with .Values.vllm.extraEnv }}
             {{- toYaml . | nindent 12 }}

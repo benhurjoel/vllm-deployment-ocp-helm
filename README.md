@@ -236,6 +236,7 @@ Use one Helm release per served model. If you increase `replicaCount`, use stora
 | `apiKeySecret.*` | Optional vLLM API key Secret for external gateways. |
 | `proxy.*` | HTTP(S)/NO proxy settings for restricted clusters. |
 | `proxy.nodeUseEnvProxy` | Adds `NODE_USE_ENV_PROXY=1` when proxy support is enabled. |
+| `proxy.applyToDownloader` / `proxy.applyToRuntime` | Controls whether proxy env vars are injected into the model downloader, runtime container, or both. |
 | `trustedCA.*` | Optional ConfigMap-mounted CA bundle for TLS-inspecting proxies. |
 | `modelStorage.*` | PVC creation or existing PVC wiring. |
 | `downloader.*` | Hugging Face download init container settings. |
@@ -297,6 +298,8 @@ vllm:
 GPU scheduling still requires the OpenShift NVIDIA GPU Operator or equivalent device plugin. Adjust `nodeAffinity.nodeSelectorTerms`, `nodeSelector`, and tolerations in values if your GPU nodes are labeled or tainted. The exact GPU product label can vary by NVIDIA device plugin configuration, so verify it with `oc get nodes --show-labels`.
 
 Container proxy variables help the Hugging Face download and any runtime outbound traffic. Image pull proxying is controlled by the OpenShift cluster proxy and node/container runtime configuration.
+
+For multimodal models that receive inline base64 images, such as DeepSeek-OCR-2 in an air-gapped cluster, set `proxy.applyToRuntime=false`. Otherwise vLLM may reject the proxy address while validating media URLs.
 
 If your proxy intercepts TLS, create or copy the trusted CA bundle ConfigMap into the model-serving namespace and set `trustedCA.enabled=true` plus `trustedCA.configMapName`.
 

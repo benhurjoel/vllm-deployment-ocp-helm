@@ -17,6 +17,11 @@ downloader:
 
 proxy:
   enabled: true
+  applyToDownloader: true
+  # DeepSeek-OCR requests should use inline base64 images in air-gapped
+  # clusters. Keeping proxy vars in the runtime can make vLLM reject the proxy
+  # address as a forbidden media URL.
+  applyToRuntime: false
   httpProxy: http://proxy.example.com:8080
   httpsProxy: http://proxy.example.com:8080
   noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"

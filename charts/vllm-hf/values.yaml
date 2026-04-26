@@ -42,6 +42,8 @@ apiKeySecret:
 
 proxy:
   enabled: false
+  applyToDownloader: true
+  applyToRuntime: true
   httpProxy: ""
   httpsProxy: ""
   noProxy: ".svc,.cluster.local,localhost,127.0.0.1"
