@@ -1,0 +1,30 @@
+{
+  "model": "deepseek-ai/DeepSeek-OCR-2",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "data:image/png;base64,REPLACE_WITH_BASE64_ENCODED_IMAGE"
+          }
+        },
+        {
+          "type": "text",
+          "text": "Free OCR."
+        }
+      ]
+    }
+  ],
+  "max_tokens": 2048,
+  "temperature": 0.0,
+  "extra_body": {
+    "skip_special_tokens": false,
+    "vllm_xargs": {
+      "ngram_size": 30,
+      "window_size": 90,
+      "whitelist_token_ids": [128821, 128822]
+    }
+  }
+}

@@ -129,6 +129,19 @@ DeepSeek-OCR-2 request requirements:
 
 A full request body is available at `examples/deepseek-ocr-2-openai-request.json`.
 
+If that example returns a 403/500, the pod is probably blocked from fetching the external image URL. Use an inline base64 image instead:
+
+```json
+{
+  "type": "image_url",
+  "image_url": {
+    "url": "data:image/png;base64,REPLACE_WITH_BASE64_ENCODED_IMAGE"
+  }
+}
+```
+
+A base64 request template is available at `examples/deepseek-ocr-2-openai-request-base64-template.json`.
+
 Qwen3.6-35B-A3B model-specific vLLM parameters included in the example:
 
 ```yaml
