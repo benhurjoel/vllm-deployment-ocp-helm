@@ -41,10 +41,13 @@ vllm:
   servedModelName: qwen3-vl-embedding-8b
   task: ""
   runner: pooling
+  convert: embed
   tensorParallelSize: 1
-  maxModelLen: "32768"
+  # Start conservative for engine initialization. Raise to 32768 after the
+  # pod is stable.
+  maxModelLen: "16384"
   dtype: bfloat16
-  gpuMemoryUtilization: 0.85
+  gpuMemoryUtilization: 0.80
   home: /tmp/home
   xdgCacheHome: /tmp/.cache
   hfHubCache: /tmp/.cache/huggingface/hub
@@ -55,6 +58,11 @@ vllm:
   extraEnvs:
     - name: VLLM_LOGGING_LEVEL
       value: INFO
+    - name: VLLM_WORKER_MULTIPROC_METHOD
+      value: spawn
+  extraArgs:
+    - --distributed-executor-backend
+    - mp
 
 resources:
   requests:
@@ -71,4 +79,4 @@ resources:
 # - context length: 32K
 # - embedding dimension: up to 4096
 # The vLLM model card example uses runner="pooling"; this file renders
-# --runner pooling for the OpenAI-compatible vLLM server.
+# --runner pooling and --convert embed for the OpenAI-compatible vLLM server.

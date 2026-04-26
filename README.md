@@ -168,7 +168,8 @@ model:
   trustRemoteCode: true
 vllm:
   runner: pooling
-  maxModelLen: "32768"
+  convert: embed
+  maxModelLen: "16384"
   dtype: bfloat16
 ```
 

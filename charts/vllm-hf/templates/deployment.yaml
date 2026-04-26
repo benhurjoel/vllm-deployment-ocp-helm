@@ -216,6 +216,10 @@ spec:
             - --runner
             - {{ .Values.vllm.runner | quote }}
             {{- end }}
+            {{- if .Values.vllm.convert }}
+            - --convert
+            - {{ .Values.vllm.convert | quote }}
+            {{- end }}
             - --dtype
             - {{ .Values.vllm.dtype | quote }}
             {{- if .Values.apiKeySecret.enabled }}

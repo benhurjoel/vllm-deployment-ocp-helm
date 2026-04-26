@@ -117,6 +117,9 @@ vllm:
   port: 8000
   # Use "pooling" for embedding/reranker models when required by vLLM.
   runner: ""
+  # Use "embed" for models that must be converted from a generative
+  # architecture into an embedding model.
+  convert: ""
   tensorParallelSize: 1
   gpuMemoryUtilization: 0.90
   maxModelLen: ""
