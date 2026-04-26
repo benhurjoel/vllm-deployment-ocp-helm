@@ -117,6 +117,7 @@ vllm:
     - --no-enable-prefix-caching
     - --mm-processor-cache-gb
     - "0"
+    - --enforce-eager
 ```
 
 DeepSeek-OCR-2 request requirements:

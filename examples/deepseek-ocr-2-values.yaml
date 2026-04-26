@@ -45,6 +45,8 @@ vllm:
     - --no-enable-prefix-caching
     - --mm-processor-cache-gb
     - "0"
+    # Avoid CUDA graph capture crashes seen with DeepSeek-OCR-2 on vLLM Docker images.
+    - --enforce-eager
   extraEnvs:
     - name: VLLM_LOGGING_LEVEL
       value: INFO

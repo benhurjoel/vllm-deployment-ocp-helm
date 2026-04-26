@@ -46,6 +46,7 @@ vllm:
     - --no-enable-prefix-caching
     - --mm-processor-cache-gb
     - "0"
+    - --enforce-eager
   extraEnvs:
     - name: VLLM_LOGGING_LEVEL
       value: INFO
