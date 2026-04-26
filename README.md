@@ -82,6 +82,11 @@ helm upgrade --install deepseek-ocr-2 ./charts/vllm-hf \
   -f examples/deepseek-ocr-2-values.yaml \
   -f examples/h200-gpu-node-affinity-values.yaml
 
+# Single merged values file for OCP UI / H200 / Portkey.
+helm upgrade --install deepseek-ocr-2 ./charts/vllm-hf \
+  -n llm-serving \
+  -f examples/deepseek-ocr-2-h200-portkey-values.yaml
+
 helm upgrade --install qwen36-35b ./charts/vllm-hf \
   -n llm-serving \
   -f examples/qwen3-6-35b-a3b-values.yaml \

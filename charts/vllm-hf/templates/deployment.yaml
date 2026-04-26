@@ -1,3 +1,12 @@
+{{- $cacheVolume := .Values.cacheVolume | default dict -}}
+{{- $cacheVolumeEnabled := $cacheVolume.enabled | default false -}}
+{{- $cacheVolumeMountPath := $cacheVolume.mountPath | default "/tmp/.cache" -}}
+{{- $cacheVolumeRootMountPath := $cacheVolume.rootCacheMountPath | default "/.cache" -}}
+{{- $cacheVolumeEmptyDir := $cacheVolume.emptyDir | default dict -}}
+{{- $shmVolume := .Values.shmVolume | default dict -}}
+{{- $shmVolumeEnabled := $shmVolume.enabled | default false -}}
+{{- $shmVolumeMountPath := $shmVolume.mountPath | default "/dev/shm" -}}
+{{- $shmVolumeSizeLimit := $shmVolume.sizeLimit | default "2Gi" -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -124,15 +133,15 @@ spec:
           volumeMounts:
             - name: model-storage
               mountPath: {{ .Values.modelStorage.mountPath | quote }}
-            {{- if .Values.cacheVolume.enabled }}
+            {{- if $cacheVolumeEnabled }}
             - name: writable-cache
-              mountPath: {{ .Values.cacheVolume.mountPath | quote }}
+              mountPath: {{ $cacheVolumeMountPath | quote }}
             - name: writable-cache
-              mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
+              mountPath: {{ $cacheVolumeRootMountPath | quote }}
             {{- end }}
-            {{- if .Values.shmVolume.enabled }}
+            {{- if $shmVolumeEnabled }}
             - name: dshm
-              mountPath: {{ .Values.shmVolume.mountPath | quote }}
+              mountPath: {{ $shmVolumeMountPath | quote }}
             {{- end }}
             {{- if .Values.trustedCA.enabled }}
             - name: trusted-ca
@@ -278,15 +287,15 @@ spec:
           volumeMounts:
             - name: model-storage
               mountPath: {{ .Values.modelStorage.mountPath | quote }}
-            {{- if .Values.cacheVolume.enabled }}
+            {{- if $cacheVolumeEnabled }}
             - name: writable-cache
-              mountPath: {{ .Values.cacheVolume.mountPath | quote }}
+              mountPath: {{ $cacheVolumeMountPath | quote }}
             - name: writable-cache
-              mountPath: {{ .Values.cacheVolume.rootCacheMountPath | quote }}
+              mountPath: {{ $cacheVolumeRootMountPath | quote }}
             {{- end }}
-            {{- if .Values.shmVolume.enabled }}
+            {{- if $shmVolumeEnabled }}
             - name: dshm
-              mountPath: {{ .Values.shmVolume.mountPath | quote }}
+              mountPath: {{ $shmVolumeMountPath | quote }}
             {{- end }}
             {{- if .Values.trustedCA.enabled }}
             - name: trusted-ca
@@ -302,20 +311,20 @@ spec:
         - name: model-storage
           persistentVolumeClaim:
             claimName: {{ include "vllm-hf.claimName" . }}
-        {{- if .Values.cacheVolume.enabled }}
+        {{- if $cacheVolumeEnabled }}
         - name: writable-cache
-          {{- if .Values.cacheVolume.emptyDir }}
+          {{- if $cacheVolumeEmptyDir }}
           emptyDir:
-            {{- toYaml .Values.cacheVolume.emptyDir | nindent 12 }}
+            {{- toYaml $cacheVolumeEmptyDir | nindent 12 }}
           {{- else }}
           emptyDir: {}
           {{- end }}
         {{- end }}
-        {{- if .Values.shmVolume.enabled }}
+        {{- if $shmVolumeEnabled }}
         - name: dshm
           emptyDir:
             medium: Memory
-            sizeLimit: {{ .Values.shmVolume.sizeLimit | quote }}
+            sizeLimit: {{ $shmVolumeSizeLimit | quote }}
         {{- end }}
         {{- if .Values.trustedCA.enabled }}
         - name: trusted-ca

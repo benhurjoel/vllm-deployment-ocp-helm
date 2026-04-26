@@ -1,0 +1,96 @@
+model:
+  repoId: deepseek-ai/DeepSeek-OCR-2
+  requiresToken: false
+  trustRemoteCode: true
+
+image:
+  repository: vllm/vllm-openai
+  tag: "v0.19.0"
+
+downloader:
+  image:
+    repository: vllm/vllm-openai
+    tag: "v0.19.0"
+
+apiKeySecret:
+  enabled: true
+  create: false
+  name: vllm-api-key
+  key: api-key
+
+proxy:
+  enabled: true
+  httpProxy: http://proxy.example.com:8080
+  httpsProxy: http://proxy.example.com:8080
+  noProxy: ".svc,.cluster.local,localhost,127.0.0.1,10.0.0.0/8"
+  nodeUseEnvProxy: true
+
+route:
+  enabled: true
+  host: deepseek-ocr-2.apps.example.openshift.com
+
+modelStorage:
+  size: 100Gi
+  storageClassName: ocs-storagecluster-ceph-rbd
+
+vllm:
+  servedModelName: deepseek-ai/DeepSeek-OCR-2
+  task: ""
+  tensorParallelSize: 1
+  maxModelLen: "8192"
+  dtype: bfloat16
+  gpuMemoryUtilization: 0.80
+  extraArgs:
+    - --logits_processors
+    - vllm.model_executor.models.deepseek_ocr:NGramPerReqLogitsProcessor
+    - --no-enable-prefix-caching
+    - --mm-processor-cache-gb
+    - "0"
+  extraEnvs:
+    - name: VLLM_LOGGING_LEVEL
+      value: INFO
+    - name: VLLM_WORKER_MULTIPROC_METHOD
+      value: spawn
+
+resources:
+  requests:
+    cpu: "8"
+    memory: 48Gi
+    nvidia.com/gpu: "1"
+  limits:
+    cpu: "16"
+    memory: 96Gi
+    nvidia.com/gpu: "1"
+
+nodeAffinity:
+  enabled: true
+  type: requiredDuringSchedulingIgnoredDuringExecution
+  nodeSelectorTerms:
+    - matchExpressions:
+        - key: nvidia.com/gpu.present
+          operator: In
+          values:
+            - "true"
+        - key: nvidia.com/gpu.product
+          operator: In
+          values:
+            - NVIDIA-H200
+
+tolerations:
+  - key: nvidia.com/gpu
+    operator: Exists
+    effect: NoSchedule
+
+startupProbe:
+  port: 8000
+
+readinessProbe:
+  port: 8000
+
+livenessProbe:
+  port: 8000
+
+openshift:
+  scc:
+    anyuid:
+      enabled: true
